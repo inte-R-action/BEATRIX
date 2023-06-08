@@ -3,7 +3,7 @@
 
 ### Multimodal inte-R-action research group
 
-Version 1.0 (20th May 2023)
+Version 1.0 - 20-05-2023
 
 Authors
 - Mr Nicholas Hedworth
