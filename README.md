@@ -5,7 +5,7 @@
 
 Version 1.0 - 20-05-2023
 
-Authors
+Authors:
 - Mr Nicholas Hedworth
 - Dr Uriel Martinez-Hernandez
 
