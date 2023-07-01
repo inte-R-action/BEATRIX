@@ -81,7 +81,7 @@ void setup()
 
     Serial.begin(9600);
     pinMode(ENABLE_PIN, OUTPUT);
-    digitalWrite(ENABLE_PIN, LOW);
+    digitalWrite(ENABLE_PIN, HIGH);
 }
 
 
@@ -142,6 +142,20 @@ bool executeCommand(char cmdReceived[][MAX_SIZE_COMMAND])
     int yMotorPos = 0;
     int zMotorPos = 0;
 
+    /* Enable/disable motors */
+    if( !strcmp(cmdReceived[0],"@ENMOTORS") )
+    {
+      if( !strcmp(cmdReceived[1],"ON\r") )
+        digitalWrite(ENABLE_PIN, LOW);
+      else if( !strcmp(cmdReceived[1],"OFF\r") )
+        digitalWrite(ENABLE_PIN, HIGH);
+      else
+        return false;
+
+      calibrationStatus = 0;
+
+      return true;
+    }
     /* Calibration of X axis */
     if( !strcmp(cmdReceived[0],"@CALX") )
     {
@@ -261,6 +275,21 @@ bool executeCommand(char cmdReceived[][MAX_SIZE_COMMAND])
         stepperX.stop();
         stepperY.stop();
         stepperZ.stop();
+    }
+    /* Get position from X axis - OK*/
+    else if( !strcmp(cmdReceived[0],"@GETXPOS\r") )
+    {
+        Serial.println(stepperX.currentPosition());
+    }
+    /* Get position from Y axis - OK*/
+    else if( !strcmp(cmdReceived[0],"@GETYPOS\r") )
+    {
+        Serial.println(stepperY.currentPosition());
+    }
+    /* Get position from Z axis - OK*/
+    else if( !strcmp(cmdReceived[0],"@GETZPOS\r") )
+    {
+        Serial.println(stepperZ.currentPosition());
     }
     /* Get position from all axis - OK*/
     else if( !strcmp(cmdReceived[0],"@GETALLPOS\r") )
@@ -624,8 +653,8 @@ void sendNACK()
 bool commandList(char *cmdReceived)
 {
     char *commandArray[] = {"@CALSTART\r","@CALX\r","@CALY\r","@CALZ\r","@CALSTATUS\r","@CALNOW\r","@CALEND\r","@MOVHOME\r","@MOVRX","@MOVRY",
-                            "@MOVRZ","@MOVAX","@MOVAY","@MOVAZ","@MOVRALL","@MOVAALL","@STOPALL\r","@GETALLPOS\r","@COMSTATUS\r"};
-    int ncommands = 19;
+                            "@MOVRZ","@MOVAX","@MOVAY","@MOVAZ","@MOVRALL","@MOVAALL","@STOPALL\r","@GETALLPOS\r","@GETXPOS\r","@GETYPOS\r","@GETZPOS\r","@COMSTATUS\r", "@ENMOTORS"};
+    int ncommands = 23;
     
     for( int i = 0; i < ncommands; i++ )
     {
