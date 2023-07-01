@@ -163,34 +163,37 @@ class ControlWindow(QWidget):
             self.currentPositiveXLineEdit = QLineEdit("0")
             self.currentPositiveXLineEdit.setEnabled(False)
             self.positiveXButton = QPushButton('go')
+            self.positiveXButton.setObjectName("X")
             self.positiveXButton.setEnabled(False)
             motorXGroup1 = QHBoxLayout()
             motorXGroup1.addWidget(self.positiveXLineEdit)
             motorXGroup1.addWidget(self.currentPositiveXLineEdit)
             motorXGroup1.addWidget(self.positiveXButton)
-            self.positiveXButton.clicked.connect(self.movePositiveXPosition)
+            self.positiveXButton.clicked.connect(lambda:self.moveRobotNeck(self.positiveXButton, self.positiveXLineEdit, self.currentPositiveXLineEdit))
             self.positiveYLabel = QLabel("Motor Y:")
             self.positiveYLineEdit = QLineEdit("0")
             self.currentPositiveYLineEdit = QLineEdit("0")
             self.currentPositiveYLineEdit.setEnabled(False)
             self.positiveYButton = QPushButton('go')
+            self.positiveYButton.setObjectName("Y")
             self.positiveYButton.setEnabled(False)
             motorYGroup1 = QHBoxLayout()
             motorYGroup1.addWidget(self.positiveYLineEdit)
             motorYGroup1.addWidget(self.currentPositiveYLineEdit)
             motorYGroup1.addWidget(self.positiveYButton)
-            self.positiveYButton.clicked.connect(self.movePositiveYPosition)
+            self.positiveYButton.clicked.connect(lambda:self.moveRobotNeck(self.positiveYButton, self.positiveYLineEdit, self.currentPositiveYLineEdit))
             self.positiveZLabel = QLabel("Motor Z:")
             self.positiveZLineEdit = QLineEdit("0")
             self.currentPositiveZLineEdit = QLineEdit("0")
             self.currentPositiveZLineEdit.setEnabled(False)
             self.positiveZButton = QPushButton('go')
+            self.positiveZButton.setObjectName("Z")
             self.positiveZButton.setEnabled(False)
             motorZGroup1 = QHBoxLayout()
             motorZGroup1.addWidget(self.positiveZLineEdit)
             motorZGroup1.addWidget(self.currentPositiveZLineEdit)
             motorZGroup1.addWidget(self.positiveZButton)
-            self.positiveZButton.clicked.connect(self.movePositiveZPosition)
+            self.positiveZButton.clicked.connect(lambda:self.moveRobotNeck(self.positiveZButton, self.positiveZLineEdit, self.currentPositiveZLineEdit))
 
             commsLayout = QFormLayout()
             commsLayout.addRow(motorXGroup1Labels)
@@ -386,16 +389,13 @@ class ControlWindow(QWidget):
             print("Port is not opened")
 
 
-    def moveRobotNeck(self):
-        pass
-
-
-    # defines the button actions to move motor X in positive/negative direction
-    def movePositiveXPosition(self):
+    # defines the button actions to move motor X,Y,Z in positive/negative direction
+    # according to the parameters passed from the lambda function
+    def moveRobotNeck(self, buttonMotorRobotNeck, targetMotorRobotNeck, currentMotorRobotNeck):
         if self.arduino.isOpen():
             if self.systemCalibrated:
-                stepValue = self.positiveXLineEdit.text()
-                command = '@MOVRX ' + stepValue  +  ' 200\r'
+                stepValue = targetMotorRobotNeck.text()
+                command = '@MOVR' + buttonMotorRobotNeck.objectName() + ' ' + stepValue  +  ' 200\r'
                 print(command)
                 self.arduino.write(command.encode(encoding='utf-8'))
                 self.msg = self.arduino.readline().decode()
@@ -403,74 +403,16 @@ class ControlWindow(QWidget):
                 self.msg = self.arduino.readline().decode()
                 print(self.msg)
 
-                command = '@GETXPOS\r'
+                command = '@GET' + buttonMotorRobotNeck.objectName() + 'POS\r'
                 print(command)
                 self.arduino.write(command.encode(encoding='utf-8'))
                 self.msg = self.arduino.readline().decode()
                 print(self.msg)
-                self.currentXpos = self.arduino.readline().decode()
-                self.currentPositiveXLineEdit.setText(self.currentXpos)
+                currentMotorRobotNeck.setText(self.arduino.readline().decode())
                 self.msg = self.arduino.readline().decode()
                 print(self.msg)
             else:
                 print("System not calibrated")
-        else:
-            print("Port is not opened")
-
-
-    # defines the button actions to move motor Y in positive/negative direction
-    def movePositiveYPosition(self):
-        if self.arduino.isOpen():
-            if self.systemCalibrated:                        
-                stepValue = self.positiveYLineEdit.text()
-                command = '@MOVRY ' + stepValue  +  ' 200\r'
-                print(command)
-                self.arduino.write(command.encode(encoding='utf-8'))
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-
-                command = '@GETYPOS\r'
-                print(command)
-                self.arduino.write(command.encode(encoding='utf-8'))
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-                self.currentYpos = self.arduino.readline().decode()
-                self.currentPositiveYLineEdit.setText(self.currentYpos)
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-            else:
-                print("System not calibrated")
-        else:
-            print("Port is not opened")
-
-
-    # defines the button actions to move motor Z in positive/negative direction
-    def movePositiveZPosition(self):
-        if self.arduino.isOpen():
-            if self.systemCalibrated:                        
-                stepValue = self.positiveZLineEdit.text()
-                command = '@MOVRZ ' + stepValue  +  ' 200\r'
-                print(command)
-                self.arduino.write(command.encode(encoding='utf-8'))
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-
-                command = '@GETZPOS\r'
-                print(command)
-                self.arduino.write(command.encode(encoding='utf-8'))
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-                self.currentZpos = self.arduino.readline().decode()
-                self.currentPositiveZLineEdit.setText(self.currentZpos)
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-            else:
-                print("System not calibrated")
-            
         else:
             print("Port is not opened")
 
