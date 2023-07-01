@@ -73,6 +73,9 @@ class ControlWindow(QWidget):
         
     def closeEvent(self, event):
         if self.arduino.isOpen():
+            self.command = '@ENMOTORS OFF\r'
+            self.systemCalibrated = False
+            self.arduino.write(self.command.encode(encoding='utf-8'))         
             self.arduino.close()
 
         if self.leftCameraOpened:
@@ -135,6 +138,15 @@ class ControlWindow(QWidget):
     def calibrationGroup(self):
             groupBox = QGroupBox("Calibration")
     
+            self.enableMotorsLabel = QRadioButton("Enable motors")
+            self.enableMotorsLabel.setEnabled(False)
+            self.enableMotorsLabel.setChecked(False)
+            self.enableMotorsLabel.toggled.connect(lambda:self.enMotBtnState(self.enableMotorsLabel))
+            self.disableMotorsLabel = QRadioButton("Disable motors")
+            self.disableMotorsLabel.setEnabled(False)
+            self.disableMotorsLabel.setChecked(True)
+            self.disableMotorsLabel.toggled.connect(lambda:self.enMotBtnState(self.disableMotorsLabel))
+    
             self.systemCalibrated = False
             calibrationLabel = QLabel("Status:")
             self.calibrationStatus = QLabel('NOT calibrated')
@@ -148,6 +160,8 @@ class ControlWindow(QWidget):
             self.homePositionButton.clicked.connect(self.moveToHomePosition)
             
             commsLayout = QFormLayout()
+            commsLayout.addRow(self.enableMotorsLabel)
+            commsLayout.addRow(self.disableMotorsLabel)
             commsLayout.addRow(calibrationLabel, self.calibrationStatus)
             commsLayout.addRow(self.calibrateButton)
             commsLayout.addRow(self.homePositionButton)
@@ -160,26 +174,35 @@ class ControlWindow(QWidget):
     
             self.positiveXLabel = QLabel("Motor X step size:")
             self.positiveXLineEdit = QLineEdit("0")
+            self.currentPositiveXLineEdit = QLineEdit("0")
+            self.currentPositiveXLineEdit.setEnabled(False)
             self.positiveXButton = QPushButton('go')
             self.positiveXButton.setEnabled(False)
             motorXGroup1 = QHBoxLayout()
             motorXGroup1.addWidget(self.positiveXLineEdit)
+            motorXGroup1.addWidget(self.currentPositiveXLineEdit)
             motorXGroup1.addWidget(self.positiveXButton)
             self.positiveXButton.clicked.connect(self.movePositiveXPosition)
             self.positiveYLabel = QLabel("Motor Y step size:")
             self.positiveYLineEdit = QLineEdit("0")
+            self.currentPositiveYLineEdit = QLineEdit("0")
+            self.currentPositiveYLineEdit.setEnabled(False)
             self.positiveYButton = QPushButton('go')
             self.positiveYButton.setEnabled(False)
             motorYGroup1 = QHBoxLayout()
             motorYGroup1.addWidget(self.positiveYLineEdit)
+            motorYGroup1.addWidget(self.currentPositiveYLineEdit)
             motorYGroup1.addWidget(self.positiveYButton)
             self.positiveYButton.clicked.connect(self.movePositiveYPosition)
             self.positiveZLabel = QLabel("Motor Z step size:")
             self.positiveZLineEdit = QLineEdit("0")
+            self.currentPositiveZLineEdit = QLineEdit("0")
+            self.currentPositiveZLineEdit.setEnabled(False)
             self.positiveZButton = QPushButton('go')
             self.positiveZButton.setEnabled(False)
             motorZGroup1 = QHBoxLayout()
             motorZGroup1.addWidget(self.positiveZLineEdit)
+            motorZGroup1.addWidget(self.currentPositiveZLineEdit)
             motorZGroup1.addWidget(self.positiveZButton)
             self.positiveZButton.clicked.connect(self.movePositiveZPosition)
 
@@ -232,6 +255,30 @@ class ControlWindow(QWidget):
        self.comPort_box.addItem('')
 
 
+    def enMotBtnState(self, motorRadioButton):
+    	
+        if motorRadioButton.text() == "Enable motors":
+            if motorRadioButton.isChecked() == True:
+                self.command = '@ENMOTORS ON\r'
+                self.systemCalibrated = False
+                self.arduino.write(self.command.encode(encoding='utf-8'))
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+          				
+        if motorRadioButton.text() == "Disable motors":
+            if motorRadioButton.isChecked() == True:
+                self.homePositionButton.setEnabled(False)
+                self.command = '@ENMOTORS OFF\r'
+                self.systemCalibrated = False
+                self.arduino.write(self.command.encode(encoding='utf-8'))
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+
+
     def portConnection(self):
         if not self.portConnectStatus:
             self.arduino.port = self.comPort_box.currentText()
@@ -244,7 +291,9 @@ class ControlWindow(QWidget):
                 self.comPort_box.setEnabled(False)
                 self.comBaudrate_line.setEnabled(False)
                 self.portStatus_status.setText("Connected")
-                self.comPortRefresh_button.setEnabled(False)                
+                self.comPortRefresh_button.setEnabled(False)
+                self.enableMotorsLabel.setEnabled(True)                
+                self.disableMotorsLabel.setEnabled(True)                
                 
                 time.sleep(0.5)
                 self.calibrateButton.setEnabled(True)
@@ -271,6 +320,8 @@ class ControlWindow(QWidget):
                 self.positiveXButton.setEnabled(False)
                 self.positiveYButton.setEnabled(False)
                 self.positiveZButton.setEnabled(False)
+                self.enableMotorsLabel.setEnabled(False)                
+                self.disableMotorsLabel.setEnabled(False)                
 
 
     def calibrateMotorSystem(self):
@@ -309,7 +360,6 @@ class ControlWindow(QWidget):
                 print(self.msg)
             else:
                 print("System not calibrated")
-            
         else:
             print("Port is not opened")
 
@@ -325,9 +375,18 @@ class ControlWindow(QWidget):
                 print(self.msg)
                 self.msg = self.arduino.readline().decode()
                 print(self.msg)
+
+                command = '@GETXPOS\r'
+                print(command)
+                self.arduino.write(command.encode(encoding='utf-8'))
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                self.currentXpos = self.arduino.readline().decode()
+                self.currentPositiveXLineEdit.setText(self.currentXpos)
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
             else:
                 print("System not calibrated")
-            
         else:
             print("Port is not opened")
 
@@ -343,9 +402,18 @@ class ControlWindow(QWidget):
                 print(self.msg)
                 self.msg = self.arduino.readline().decode()
                 print(self.msg)
+
+                command = '@GETYPOS\r'
+                print(command)
+                self.arduino.write(command.encode(encoding='utf-8'))
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                self.currentYpos = self.arduino.readline().decode()
+                self.currentPositiveYLineEdit.setText(self.currentYpos)
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
             else:
                 print("System not calibrated")
-            
         else:
             print("Port is not opened")
 
@@ -359,6 +427,16 @@ class ControlWindow(QWidget):
                 self.arduino.write(command.encode(encoding='utf-8'))
                 self.msg = self.arduino.readline().decode()
                 print(self.msg)
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+
+                command = '@GETZPOS\r'
+                print(command)
+                self.arduino.write(command.encode(encoding='utf-8'))
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                self.currentZpos = self.arduino.readline().decode()
+                self.currentPositiveZLineEdit.setText(self.currentZpos)
                 self.msg = self.arduino.readline().decode()
                 print(self.msg)
             else:
