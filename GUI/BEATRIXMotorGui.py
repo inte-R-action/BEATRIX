@@ -386,6 +386,10 @@ class ControlWindow(QWidget):
             print("Port is not opened")
 
 
+    def moveRobotNeck(self):
+        pass
+
+
     # defines the button actions to move motor X in positive/negative direction
     def movePositiveXPosition(self):
         if self.arduino.isOpen():
