@@ -35,21 +35,16 @@ from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
 from PyQt5.QtWidgets import QLineEdit
-from PyQt5.QtWidgets import QSpinBox
-from PyQt5.QtWidgets import QDoubleSpinBox
 from PyQt5.QtWidgets import QComboBox
-from PyQt5.QtWidgets import QTabWidget
-from PyQt5.QtWidgets import QFrame
-from PyQt5.QtWidgets import QSlider
 from PyQt5.QtWidgets import QGroupBox
 from PyQt5.QtWidgets import QRadioButton
 from PyQt5.QtWidgets import QCheckBox
 from PyQt5.QtCore import QThread
-from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QSize
 
 
+# main window of GUI
 class ControlWindow(QWidget):
     def __init__(self, *args):
         super(QWidget, self).__init__()
@@ -71,27 +66,8 @@ class ControlWindow(QWidget):
         self.leftCameraOpened = False
         self.rightCameraOpened = False
         
-    def closeEvent(self, event):
-        if self.arduino.isOpen():
-            self.command = '@ENMOTORS OFF\r'
-            self.systemCalibrated = False
-            self.arduino.write(self.command.encode(encoding='utf-8'))         
-            self.arduino.close()
-
-        if self.leftCameraOpened:
-            wname = self.video_getter_left.windowNameStr
-            print(wname)
-            self.video_getter_left.stop()
-#            cv2.destroyWindow(wname)
-
-        if self.rightCameraOpened:
-            wname = self.video_getter_right.windowNameStr
-            print(wname)
-            self.video_getter_right.stop()
-#            cv2.destroyWindow(wname)
-            
-        print("manually closed")
-
+        
+    # define the components for connection to Arduino board via USB port
     def connectionGroup(self):
             groupBox = QGroupBox("Connection")
 
@@ -134,7 +110,8 @@ class ControlWindow(QWidget):
             groupBox.setLayout(commsLayout)
     
             return groupBox
-        
+
+    # definte the components for calibraiton of motors of robot neck        
     def calibrationGroup(self):
             groupBox = QGroupBox("Calibration")
     
@@ -169,10 +146,19 @@ class ControlWindow(QWidget):
     
             return groupBox
 
+    # define the components for control of motors of the robot neck
     def motorControlGroup(self):
-            groupBox = QGroupBox("Motor control")
+            groupBox = QGroupBox("Robot neck")
     
-            self.positiveXLabel = QLabel("Motor X step size:")
+            motorXGroup1Labels = QHBoxLayout()
+            motorXGroup1Labels.addWidget(QLabel(""))
+            targetPositionLabel = QLabel("target position")
+            currentPositionLabel = QLabel("current position")
+            motorXGroup1Labels.addWidget(targetPositionLabel)
+            motorXGroup1Labels.addWidget(currentPositionLabel)
+            motorXGroup1Labels.addWidget(QLabel(""))
+    
+            self.positiveXLabel = QLabel("Motor X:")
             self.positiveXLineEdit = QLineEdit("0")
             self.currentPositiveXLineEdit = QLineEdit("0")
             self.currentPositiveXLineEdit.setEnabled(False)
@@ -183,7 +169,7 @@ class ControlWindow(QWidget):
             motorXGroup1.addWidget(self.currentPositiveXLineEdit)
             motorXGroup1.addWidget(self.positiveXButton)
             self.positiveXButton.clicked.connect(self.movePositiveXPosition)
-            self.positiveYLabel = QLabel("Motor Y step size:")
+            self.positiveYLabel = QLabel("Motor Y:")
             self.positiveYLineEdit = QLineEdit("0")
             self.currentPositiveYLineEdit = QLineEdit("0")
             self.currentPositiveYLineEdit.setEnabled(False)
@@ -194,7 +180,7 @@ class ControlWindow(QWidget):
             motorYGroup1.addWidget(self.currentPositiveYLineEdit)
             motorYGroup1.addWidget(self.positiveYButton)
             self.positiveYButton.clicked.connect(self.movePositiveYPosition)
-            self.positiveZLabel = QLabel("Motor Z step size:")
+            self.positiveZLabel = QLabel("Motor Z:")
             self.positiveZLineEdit = QLineEdit("0")
             self.currentPositiveZLineEdit = QLineEdit("0")
             self.currentPositiveZLineEdit.setEnabled(False)
@@ -207,6 +193,7 @@ class ControlWindow(QWidget):
             self.positiveZButton.clicked.connect(self.movePositiveZPosition)
 
             commsLayout = QFormLayout()
+            commsLayout.addRow(motorXGroup1Labels)
             commsLayout.addRow(self.positiveXLabel, motorXGroup1)
             commsLayout.addRow(self.positiveYLabel, motorYGroup1)
             commsLayout.addRow(self.positiveZLabel, motorZGroup1)
@@ -215,20 +202,23 @@ class ControlWindow(QWidget):
             return groupBox
 
 
+    # define the components to enable/disable the cameras - robot eyes
     def visionGroup(self):
-        groupBox = QGroupBox("Cameras")
+        groupBox = QGroupBox("Robot eyes")
 
-        self.cameraSelectionLabel = QLabel("Select camera")
         self.leftCameraCheckBox = QCheckBox("Left camera")       
         self.leftCameraCheckBox.setChecked(False)
+        self.leftCameraCheckBox.toggled.connect(lambda:self.enBtnOpenCamera(self.leftCameraCheckBox, self.rightCameraCheckBox))
         self.rightCameraCheckBox = QCheckBox("Right camera")       
         self.rightCameraCheckBox.setChecked(False)
+        self.rightCameraCheckBox.toggled.connect(lambda:self.enBtnOpenCamera(self.rightCameraCheckBox, self.leftCameraCheckBox))
         self.openCameraButton = QPushButton("Open camera")
+        self.openCameraButton.setEnabled(False)
         self.openCameraButton.clicked.connect(self.openCamera)
 
         commsLayout = QFormLayout()
-        commsLayout.addRow(self.cameraSelectionLabel)
-        commsLayout.addRow(self.leftCameraCheckBox, self.rightCameraCheckBox)
+        commsLayout.addRow(self.leftCameraCheckBox)
+        commsLayout.addRow(self.rightCameraCheckBox)        
         commsLayout.addRow(self.openCameraButton)
 
         groupBox.setLayout(commsLayout)
@@ -236,15 +226,40 @@ class ControlWindow(QWidget):
         return groupBox
 
 
+    # define the components for the audio - robot ears
     def audioGroup(self):
-            groupBox = QGroupBox("Microphones")
+            groupBox = QGroupBox("Robot ears")
     
             vbox = QVBoxLayout()
             groupBox.setLayout(vbox)
     
             return groupBox
 
+
+    # default closing actions when the GUI is closed
+    def closeEvent(self, event):
+        if self.arduino.isOpen():
+            self.command = '@ENMOTORS OFF\r'
+            self.systemCalibrated = False
+            self.arduino.write(self.command.encode(encoding='utf-8'))         
+            self.arduino.close()
+
+        if self.leftCameraOpened:
+            wname = self.video_getter_left.windowNameStr
+            print(wname)
+            self.video_getter_left.stop()
+#            cv2.destroyWindow(wname)
+
+        if self.rightCameraOpened:
+            wname = self.video_getter_right.windowNameStr
+            print(wname)
+            self.video_getter_right.stop()
+#            cv2.destroyWindow(wname)
+            
+        print("manually closed")
+
         
+    # refresh the list of COM/USB ports for communication with Arduino
     def refreshPorts(self):
        self.comPort_box.clear()
        ports = serial.tools.list_ports.comports(include_links=False)
@@ -255,30 +270,41 @@ class ControlWindow(QWidget):
        self.comPort_box.addItem('')
 
 
+    # defines the actions when radiobuttons in the calibration group are selected
     def enMotBtnState(self, motorRadioButton):
     	
         if motorRadioButton.text() == "Enable motors":
             if motorRadioButton.isChecked() == True:
                 self.command = '@ENMOTORS ON\r'
-                self.systemCalibrated = False
-                self.arduino.write(self.command.encode(encoding='utf-8'))
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-          				
-        if motorRadioButton.text() == "Disable motors":
+            else:
+                pass
+        elif motorRadioButton.text() == "Disable motors":
             if motorRadioButton.isChecked() == True:
                 self.homePositionButton.setEnabled(False)
                 self.command = '@ENMOTORS OFF\r'
-                self.systemCalibrated = False
-                self.arduino.write(self.command.encode(encoding='utf-8'))
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
-                self.msg = self.arduino.readline().decode()
-                print(self.msg)
+            else:
+                pass
+        else:
+            self.homePositionButton.setEnabled(False)
+            self.command = '@ENMOTORS OFF\r'
+
+        self.systemCalibrated = False
+        self.arduino.write(self.command.encode(encoding='utf-8'))
+        self.msg = self.arduino.readline().decode()
+        print(self.msg)
+        self.msg = self.arduino.readline().decode()
+        print(self.msg)
 
 
+    # enables/disables the button to open the cameras - robot eyes
+    def enBtnOpenCamera(self, lCameraCheckBox, rCameraCheckBox):
+        if lCameraCheckBox.isChecked() or rCameraCheckBox.isChecked():
+            self.openCameraButton.setEnabled(True)
+        else:
+            self.openCameraButton.setEnabled(False)
+
+
+    # defines the button actions to connect/disconnect the GUI to Arduino
     def portConnection(self):
         if not self.portConnectStatus:
             self.arduino.port = self.comPort_box.currentText()
@@ -311,9 +337,6 @@ class ControlWindow(QWidget):
                 self.systemCalibrated = False
                 self.calibrationStatus.setText('NOT calibrated')
 
-                #self.manualMotorControl_home_button.setEnabled(False)
-                #self.processControl_start_button.setEnabled(False)
-                #self.processControl_stop_button.setEnabled(False)
                 self.comPortRefresh_button.setEnabled(True)
                 self.calibrateButton.setEnabled(False)
                 self.homePositionButton.setEnabled(False)
@@ -324,6 +347,7 @@ class ControlWindow(QWidget):
                 self.disableMotorsLabel.setEnabled(False)                
 
 
+    # defines the button actions to calibrate the motors - robot neck
     def calibrateMotorSystem(self):
         if self.arduino.isOpen():
             command = '@CALNOW\r'
@@ -334,9 +358,6 @@ class ControlWindow(QWidget):
             print(self.msg)
                         
             self.calibrationStatus.setText('System calibrated')
-            #self.manualMotorControl_home_button.setEnabled(True)
-            #self.processControl_start_button.setEnabled(True)
-            #self.processControl_stop_button.setEnabled(True)
             self.homePositionButton.setEnabled(True)
             self.positiveXButton.setEnabled(True)
             self.positiveYButton.setEnabled(True)
@@ -346,6 +367,7 @@ class ControlWindow(QWidget):
             print("Port is not opened")
 
 
+    # defines the button actions to move the robot neck to home position
     def moveToHomePosition(self):
         if self.arduino.isOpen():
             if self.systemCalibrated:
@@ -364,6 +386,7 @@ class ControlWindow(QWidget):
             print("Port is not opened")
 
 
+    # defines the button actions to move motor X in positive/negative direction
     def movePositiveXPosition(self):
         if self.arduino.isOpen():
             if self.systemCalibrated:
@@ -391,6 +414,7 @@ class ControlWindow(QWidget):
             print("Port is not opened")
 
 
+    # defines the button actions to move motor Y in positive/negative direction
     def movePositiveYPosition(self):
         if self.arduino.isOpen():
             if self.systemCalibrated:                        
@@ -418,6 +442,7 @@ class ControlWindow(QWidget):
             print("Port is not opened")
 
 
+    # defines the button actions to move motor Z in positive/negative direction
     def movePositiveZPosition(self):
         if self.arduino.isOpen():
             if self.systemCalibrated:                        
@@ -446,6 +471,7 @@ class ControlWindow(QWidget):
             print("Port is not opened")
 
 
+    # defines the button actions to open the cameras - robot eyes
     def openCamera(self):
         leftCameraSelection = self.leftCameraCheckBox.isChecked()
         rightCameraSelection = self.rightCameraCheckBox.isChecked()
@@ -461,6 +487,8 @@ class ControlWindow(QWidget):
                 self.video_getter_right = VideoGet('right camera', 2).start()
                 self.rightCameraOpened = True
 
+
+# Class implemented to start video from cameras in a thread without blocking robot actions
 class VideoGet:
     """
     Class that continuously gets frames from a VideoCapture object
@@ -503,6 +531,8 @@ class VideoGet:
 #        cv2.destroyWindow(self)
         self.stopped = True
 
+
+# Main execution of the application
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = ControlWindow()
