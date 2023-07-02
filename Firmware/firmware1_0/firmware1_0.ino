@@ -1,9 +1,9 @@
-// Multimodal Interaction and Robot Active Perception (inte-R-action) Lab
-// Department of Electronic & Electrical Engineering
-// University of Bath
 // BEATRIX firmware 1.0
 // Author: Uriel Martinez-Hernandez
 // date: 12-06-2023
+
+// Multimodal Interaction and Robot Active Perception (inte-R-action) Lab
+// University of Bath
 
 // BEATRIX firmware - beta version 1.0
 // Bath opEn humAnoid for Teaching and Research in robotICS(X)
