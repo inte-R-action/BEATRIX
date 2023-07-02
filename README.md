@@ -1,5 +1,5 @@
 # BEATRIX
-## Bath opEn humAnoid for Teaching and Research in RobotICS
+## <ins>B</ins>ath op<ins>E</ins>n hum<ins>A</ins>noid for <ins>T</ins>eaching and <ins>R</ins>esearch in robot<ins>ICS(X)</ins>
 
 ### Multimodal inte-R-action research group
 
