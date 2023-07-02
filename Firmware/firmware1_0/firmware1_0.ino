@@ -6,101 +6,114 @@
 // date: 12-06-2023
 
 // BEATRIX firmware - beta version 1.0
+// Bath opEn humAnoid for Teaching and Research in robotICS(X)
 
 #include <AccelStepper.h>
 #include <MultiStepper.h>
 
-// Define stepper motor pins
-#define X_STEP_PIN 2                  
+// Define pins for stepper motor of robot neck
+// motor X
+#define X_STEP_PIN 2          
 #define X_DIR_PIN 5
+// motor Y
 #define Y_STEP_PIN 3
 #define Y_DIR_PIN 6
+// motor Z
 #define Z_STEP_PIN 4
 #define Z_DIR_PIN 7
+// pin to enable/disable all motors
 #define ENABLE_PIN 8
 
+// maximum number of characters for commands
 #define MAX_SIZE_COMMAND 20
+// maximum number of paramater for each command
 #define MAX_NUM_PARAMETERS 20
+// maximum motor speed
 #define MAX_SPEED 200
+// maximum motor acceleration
 #define MAX_ACCEL 200
 
-// x axis
-AccelStepper stepperX(1, X_STEP_PIN, X_DIR_PIN); // (num. of motore, dir, step)
-// y axis
-AccelStepper stepperY(1, Y_STEP_PIN, Y_DIR_PIN); // (num. of motore, dir, step)
-// z axis
-AccelStepper stepperZ(1, Z_STEP_PIN, Z_DIR_PIN); // (num. of motore, dir, step)
-
+// creates object for motor X
+AccelStepper stepperX(1, X_STEP_PIN, X_DIR_PIN); // (num. of motor, dir, step)
+// creates object for motor Y
+AccelStepper stepperY(1, Y_STEP_PIN, Y_DIR_PIN); // (num. of motor, dir, step)
+// creates object for motor Z
+AccelStepper stepperZ(1, Z_STEP_PIN, Z_DIR_PIN); // (num. of motor, dir, step)
+// creates object to handle multiple motors
 MultiStepper steppers;
 
-float speedX = MAX_SPEED;
-float accelerationX = MAX_ACCEL;
-
+// define the number of motors to handle simultaneously
 long multiStepperPositions[3];
 
-int count = 0;
-char command[MAX_SIZE_COMMAND];
-int xPosition = 0;
-int yPosition = 0;
-int xySpeed = 0;
+// array to store commands received
 char commands_char[MAX_NUM_PARAMETERS][MAX_SIZE_COMMAND];
+// counter for commands
 int ncommand = 0;
+// counter for parameters
+int count = 0;
+// gets characters
 char current_char;
-int operationStatus = 0;
+// stores the current status of a command
 bool commandStatus = false;
+// stores calibration status of the robot
 int calibrationStatus = 0;
 
+// temporary used for @MOVALL command
 boolean inPositionX = false;
 boolean inPositionY = false;   
 boolean inPositionZ = false;
 
-boolean inHomeX = false;
-boolean inHomeY = false;
-boolean inHomeZ = false;
-
 
 void setup()
-{  
+{
+    // initialise motors to move zero steps
     stepperX.move(0);
     stepperY.move(0);
     stepperZ.move(0);
 
+    // initialise speed and acceleration for motor X
     stepperX.setMaxSpeed(MAX_SPEED);
     stepperX.setAcceleration(MAX_ACCEL);
 
+    // initialise speed and acceleration for motor Y
     stepperY.setMaxSpeed(MAX_SPEED);
     stepperY.setAcceleration(MAX_ACCEL);
 
+    // initialise speed and acceleration for motor Z
     stepperZ.setMaxSpeed(MAX_SPEED);
     stepperZ.setAcceleration(MAX_ACCEL);
   
-    // Then give them to MultiStepper to manage
+    // Allocates all motors to MultiStepper to manage in corresponding commands
     steppers.addStepper(stepperX);
     steppers.addStepper(stepperY);
     steppers.addStepper(stepperZ);
 
+    // set baudrate for communication with Arduino board
     Serial.begin(9600);
+    // configures the enable_pin as output
     pinMode(ENABLE_PIN, OUTPUT);
+    // initialise enable_pin as HIGH to disable the motors
+    // HIGH: disable robot motors
+    // LOW: enable robot motors
     digitalWrite(ENABLE_PIN, HIGH);
 }
 
 
 void loop()
 {
-
+    // if data is received, then it is stored in commands_char
     if( Serial.available() > 0 )
-    {
-      
+    {      
         for( int i = 0; i < MAX_NUM_PARAMETERS; i++ )
         {
             for( int j = 0; j < MAX_SIZE_COMMAND; j++ )
                 commands_char[i][j] = '\0';
         }
 
-        operationStatus = 0;
         count = 0;
         ncommand = 0;
 
+        // stores commmands and parameters in commands_char
         do
         {
             current_char = Serial.read();
@@ -117,16 +130,18 @@ void loop()
                 commands_char[ncommand][count] = '\0';
                 count = 0;
                 ncommand++;                
-            }
-            
+            }            
         }while( current_char != '\r' );
 
+        // check if the command received is correct
         commandStatus = commandList(commands_char[0]);
         replyAcknowledge(commandStatus);
 
+        // if the command is correct, then it is executed by the corresponding function
         if( commandStatus == true )
             replyAcknowledge(executeCommand(commands_char));
 
+        // cleans the serial pipe
         Serial.flush();
     }
 
@@ -247,10 +262,6 @@ bool executeCommand(char cmdReceived[][MAX_SIZE_COMMAND])
     {
         if( calibrationStatus == 1 )
         {
-            inHomeX = false;
-            inHomeY = false;
-            inHomeZ = false;
-
             multiStepperPositions[0] = 0;
             multiStepperPositions[1] = 0;
             multiStepperPositions[2] = 0;
@@ -628,7 +639,6 @@ bool executeCommand(char cmdReceived[][MAX_SIZE_COMMAND])
 /* Send reply ACK/NACK to client */
 void replyAcknowledge(bool cmdStatus)
 {
-//    delay(100);
     if( cmdStatus == true )
         sendACK();
     else
