@@ -275,7 +275,8 @@ class ControlWindow(QWidget):
 
     # defines the actions when radiobuttons in the calibration group are selected
     def enMotBtnState(self, motorRadioButton):
-    	
+        self.command = '@ENMOTORS OFF\r'
+        
         if motorRadioButton.text() == "Enable motors":
             if motorRadioButton.isChecked() == True:
                 self.command = '@ENMOTORS ON\r'
@@ -383,6 +384,33 @@ class ControlWindow(QWidget):
                 print(self.msg)
                 self.msg = self.arduino.readline().decode()
                 print(self.msg)
+                
+                command = '@GETXPOS\r'
+                print(command)
+                self.arduino.write(command.encode(encoding='utf-8'))
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                self.currentPositiveXLineEdit.setText(self.arduino.readline().decode())
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                
+                command = '@GETYPOS\r'
+                print(command)
+                self.arduino.write(command.encode(encoding='utf-8'))
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                self.currentPositiveYLineEdit.setText(self.arduino.readline().decode())
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                
+                command = '@GETZPOS\r'
+                print(command)
+                self.arduino.write(command.encode(encoding='utf-8'))
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)
+                self.currentPositiveZLineEdit.setText(self.arduino.readline().decode())
+                self.msg = self.arduino.readline().decode()
+                print(self.msg)                
             else:
                 print("System not calibrated")
         else:
