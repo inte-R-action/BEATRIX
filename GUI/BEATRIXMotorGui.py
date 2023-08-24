@@ -484,7 +484,7 @@ class ControlWindow(QWidget):
                 self.leftCameraOpened = True
 
             if rightCameraSelection:
-                self.video_getter_right = VideoGet('right camera', 2).start()
+                self.video_getter_right = VideoGet('right camera', 0).start()
                 self.rightCameraOpened = True
 
 
