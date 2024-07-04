@@ -9,4 +9,4 @@ Authors:
 - Mr Nicholas Hedworth
 - Dr Uriel Martinez-Hernandez
 
-<img src="https://github.com/inte-R-action/BEATRIX/blob/main/Images/BEATRIX_robot_head_v1.png" width="300" height="550" align="center">
+<img src="https://github.com/inte-R-action/BEATRIX/blob/main/Images/BEATRIX_humanoid_robot_with_labels.png" width="300" height="550" align="center">
